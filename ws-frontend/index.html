@@ -1,69 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Demo</title>
-
+    <title>Malding WebSocket Board</title>
 </head>
 
-<!-- Works with ws-node in this repo -->
-    
 <body>
+    <input id="boardId" type="text" placeholder="Enter Board ID">
     <input id="in" type="text" placeholder="Paste here">
     <p id="out">...</p>
     <p id="err" style="color: red;"></p>
+    <button id="connectButton">Connect</button>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Extract board ID and token from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token'); // Extract the token
 
-        if (!localStorage.getItem('pastebin_token')) {
-            localStorage.setItem('pastebin_token', prompt('Enter token'));
-        }
-
-        WS_TOKEN = localStorage.getItem('pastebin_token') || 'my-secret-token';
-        
-        // wss = SSL-krypterad
-        // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}` 
-        WS_URL = `ws://localhost:5500?token=${WS_TOKEN}`
-
-        console.log(WS_URL)
-        
-        // Create a WebSocket connection
-        const socket = new WebSocket(WS_URL);
-
-        // Connection established 
-        socket.onopen = function (event) {
-            console.log('Connected to WebSocket server');
-        };
-
-        // Message listener
-        socket.onmessage = function (event) {
-            console.log('Received message:', event.data);
-            const data = JSON.parse(event.data);
-
-            if (data.type == 'paste') {
-                document.querySelector('#out').innerText = data.text;
-                document.querySelector('#err').innerText = '';
-            } else if (data.type == 'error') {
-                document.querySelector('#err').innerText = data.msg;
+            // Check if a token is provided
+            if (!token) {
+                alert('Token not provided. Please make sure to provide a valid token in the URL.');
+                return;
             }
-            
-        };
 
-        // Connection closed 
-        socket.onclose = function (event) {
-            console.log('Connection closed');
-        };
+            // Remove the token input field since it's no longer needed
 
-        document.querySelector('#in').addEventListener('input', (evt) => {
-            socket.send(JSON.stringify({
-                type: 'paste',
-                text: evt.target.value
-            }));
+            // Add an event listener to send the WebSocket request when the "Connect" button is clicked
+            document.querySelector('#connectButton').addEventListener('click', () => {
+                // Extract board ID from the input field
+                const boardId = document.querySelector('#boardId').value;
+
+                // Check if the board ID is provided
+                if (!boardId) {
+                    alert('Please enter a Board ID.');
+                    return;
+                }
+
+                // Construct the WebSocket URL with board ID and token
+                const WS_URL = `ws://localhost:3030?token=${token}&boardId=${boardId}`;
+
+                // Create a WebSocket connection
+                const socket = new WebSocket(WS_URL);
+
+                // Connection established 
+                socket.onopen = function (event) {
+                    console.log('Connected to WebSocket server');
+                };
+
+                // Message listener
+                socket.onmessage = function (event) {
+                    console.log('Received message:', event.data);
+                    const data = JSON.parse(event.data);
+
+                    if (data.type == 'paste') {
+                        document.querySelector('#out').innerText = data.text;
+                        document.querySelector('#err').innerText = '';
+                    } else if (data.type == 'error') {
+                        document.querySelector('#err').innerText = data.msg;
+                    }
+                };
+
+                // Connection closed 
+                socket.onclose = function (event) {
+                    console.log('Connection closed');
+                };
+
+                document.querySelector('#in').addEventListener('input', (evt) => {
+                    const inputText = evt.target.value;
+                    document.querySelector('#out').innerText = inputText; // Update the "out" paragraph
+                    socket.send(JSON.stringify({
+                        type: 'paste',
+                        text: inputText
+                    }));
+                });
+            });
         });
     </script>
-
 </body>
 
 </html>
