@@ -17,15 +17,26 @@
 
     <script>
 
-        if (!localStorage.getItem('pastebin_token')) {
-            localStorage.setItem('pastebin_token', prompt('Enter token'));
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        if (!localStorage.getItem('access_token')) {
+            localStorage.setItem('access_token', urlParams.get('access_token'));
+        }
+        if (!localStorage.getItem('board')) {
+            localStorage.setItem('board', urlParams.get('board'));
         }
 
-        WS_TOKEN = localStorage.getItem('pastebin_token') || 'my-secret-token';
+        WS_TOKEN = urlParams.get('access_token');
+        const board = urlParams.get('board');
+
+        console.log(WS_TOKEN)
+        console.log(board)
+        //WS_TOKEN = process.env.WS_TOKEN
         
         // wss = SSL-krypterad
-        // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}` 
-        WS_URL = `ws://localhost:5500?token=${WS_TOKEN}`
+        // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}`
+        WS_URL = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}&board=${board}`
 
         console.log(WS_URL)
         

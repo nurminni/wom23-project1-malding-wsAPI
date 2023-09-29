@@ -2,18 +2,21 @@ const WebSocket = require('ws')
 require('dotenv').config()
 
 const PORT = process.env.PORT || 5500
-const wss = new WebSocket.Server({ port: PORT })
+const wss = new WebSocket.Server({ 
+    port: PORT,
+    allowEIO3: true
+})
 
 // Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
-const clients = new Set()
+const clients = [];
 
 // URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
     
     // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
     const urlParams = new URLSearchParams(req.url.slice(1));
-    if (urlParams.get('token') !== process.env.WS_TOKEN) {
-        console.log('Invalid token: ' + urlParams.get('token'));
+    if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
+        console.log('Invalid token: ' + urlParams.get('access_token'));
         ws.send(JSON.stringify({
             type: 'error',
             msg: 'ERROR: Invalid token.'
@@ -21,10 +24,16 @@ wss.on('connection', (ws, req) => {
         ws.close();
     }
 
+    const boardId = urlParams.get('board');
+    if(!clients.includes(boardId)) clients[boardId] = new Set();
+
     // Spara connectionen i vårt client-Set:
-    if (!clients.has(ws)) {
+    if (!clients[boardId].has(ws)) {
         ws.createdAt = new Date()
-        clients.add(ws)
+        clients[boardId].add(ws)
+    }
+    if(clients[boardId].has(ws)) {
+        clients[boardId].add(ws)
     }
     console.log('Client connected:', req.headers['sec-websocket-key'], 
         'client count:', clients.size, ws);
@@ -40,7 +49,7 @@ wss.on('connection', (ws, req) => {
 
         console.log('Received message:', message)
 
-        clients.forEach(client => {
+        clients[boardId].forEach(client => {
 
             // Skicka inte till vår egen klient (ws)
             if (client === ws) return
