@@ -8,15 +8,21 @@ const wss = new WebSocket.Server({
 })
 
 // Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
-const clients = [];
+const boards = []
+const clients = new Set()
 
 // URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
     
     // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
-    const urlParams = new URLSearchParams(req.url.slice(1));
-    if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
-        console.log('Invalid token: ' + urlParams.get('access_token'));
+    const url = req.url.slice(1)
+    const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
+    console.log(urlParams)
+    console.log(urlParams.get('token'))
+    console.log(urlParams.get('board'))
+    
+    if (urlParams.get('token') !== process.env.WS_TOKEN) {
+        console.log('Invalid token: ' + urlParams.get('token'));
         ws.send(JSON.stringify({
             type: 'error',
             msg: 'ERROR: Invalid token.'
@@ -24,17 +30,20 @@ wss.on('connection', (ws, req) => {
         ws.close();
     }
 
-    const boardId = urlParams.get('board');
-    if(!clients.includes(boardId)) clients[boardId] = new Set();
+    const boardId = urlParams.get('board')
+    if(!boards.includes(boardId)) {
+        boards.push(boardId)
+        boards.sort()
+    }
 
     // Spara connectionen i vårt client-Set:
-    if (!clients[boardId].has(ws)) {
+    if (!clients.has(ws)) {
         ws.createdAt = new Date()
-        clients[boardId].add(ws)
+        clients.add(ws)
     }
-    if(clients[boardId].has(ws)) {
-        clients[boardId].add(ws)
-    }
+
+    boards[boardId] = clients
+    
     console.log('Client connected:', req.headers['sec-websocket-key'], 
         'client count:', clients.size, ws);
 
@@ -49,11 +58,12 @@ wss.on('connection', (ws, req) => {
 
         console.log('Received message:', message)
 
-        clients[boardId].forEach(client => {
+        clients.forEach(client => {
 
             // Skicka inte till vår egen klient (ws)
             if (client === ws) return
 
+            console.log(client)
             client.send(JSON.stringify({
                 type: 'paste',
                 text: message.text
