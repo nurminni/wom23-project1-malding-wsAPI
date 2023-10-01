@@ -1,80 +1,64 @@
-const WebSocket = require('ws')
-require('dotenv').config()
+const WebSocket = require('ws');
+require('dotenv').config();
 
-const PORT = process.env.PORT || 5500
-const wss = new WebSocket.Server({ 
+const PORT = process.env.PORT || 5500;
+const wss = new WebSocket.Server({
     port: PORT,
-    allowEIO3: true
-})
+    allowEIO3: true,
+});
 
-// Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
-const boards = []
-const clients = new Set()
+// Create an object to store active WebSocket connections by boardId
+const clients = {};
 
-// URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
-    
     // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
-    const url = req.url.slice(1)
-    const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
-    console.log(urlParams)
-    console.log(urlParams.get('token'))
-    console.log(urlParams.get('board'))
-    
+    const url = req.url.slice(1);
+    const urlParams = new URLSearchParams(req.url.slice(url.indexOf('?') + 1));
+    console.log(urlParams);
+    console.log(urlParams.get('token'));
+    console.log(urlParams.get('board'));
+
     if (urlParams.get('token') !== process.env.WS_TOKEN) {
         console.log('Invalid token: ' + urlParams.get('token'));
-        ws.send(JSON.stringify({
-            type: 'error',
-            msg: 'ERROR: Invalid token.'
-        }));
+        ws.send(
+            JSON.stringify({
+                type: 'error',
+                msg: 'ERROR: Invalid token.',
+            })
+        );
         ws.close();
+        return; // Stop handling this connection
     }
 
-    const boardId = urlParams.get('board')
-    if(!boards.includes(boardId)) {
-        boards.push(boardId)
-        boards.sort()
+    const boardId = urlParams.get('board');
+
+    // Create a Set for this board if it doesn't exist
+    if (!clients[boardId]) {
+        clients[boardId] = new Set();
     }
 
-    // Spara connectionen i vårt client-Set:
-    if (!clients.has(ws)) {
-        ws.createdAt = new Date()
-        clients.add(ws)
-    }
+    // Add the WebSocket connection to the Set
+    clients[boardId].add(ws);
 
-    boards[boardId] = clients
-    
-    console.log('Client connected:', req.headers['sec-websocket-key'], 
-        'client count:', clients.size, ws);
+    console.log('Client connected:', req.headers['sec-websocket-key']);
+    console.log('client count:', clients[boardId].size);
 
     ws.on('message', (rawMessage) => {
-
-        ws.lastMessage = new Date()
-    
-        // Vi konverterar vår råa JSON till ett objekt
-        const message = JSON.parse(rawMessage.toString())
-
-        message.clientId = req.headers['sec-websocket-key']
-
-        console.log('Received message:', message)
-
-        clients.forEach(client => {
-
-            // Skicka inte till vår egen klient (ws)
-            if (client === ws) return
-
-            console.log(client)
-            client.send(JSON.stringify({
-                type: 'paste',
-                text: message.text
-            }));
-        })
-
+        // Parse the received message as JSON
+        const message = JSON.parse(rawMessage);
+        console.log(message);
+        // Broadcast the message to all clients on the same board
+        clients[boardId].forEach((client) => {
+            if (client !== ws) {
+                // Send the message to clients other than the sender
+                client.send(JSON.stringify({ type: 'paste', text: message.text }));
+            }
+        });
     });
 
     ws.on('close', () => {
+        // Remove the WebSocket connection from the Set when it's closed
+        clients[boardId].delete(ws);
         console.log('Client disconnected');
     });
-    
-
 });

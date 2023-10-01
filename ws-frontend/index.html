@@ -6,10 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Malding WebSocket Board</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
+
 <body>
+
     <div class="container">
+        <div id="dropdown-container" class="dropdown-container">
+            <label for="boardDropdown">Select Board:</label>
+            <select id="boardDropdown" onchange="changeBoard()">
+            </select>
+        </div>
         <div class="notes">
             <div id="create">
                 <i class="fa-solid fa-plus"></i>
@@ -21,61 +30,6 @@
             </div>
         </div>
     </div>
-    <script>
-        
-        /*if (!localStorage.getItem('access_token')) {
-            localStorage.setItem('access_token', urlParams.get('access_token'));
-        }
-        if (!localStorage.getItem('board')) {
-            localStorage.setItem('board', urlParams.get('board'));
-        }*/
-
-        // hårdkodat för test, sätt in i WS_TOKEN i .env
-        const WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-        const board = "65140bbf3923bcbdedc859a9"
-
-        //console.log(WS_TOKEN)
-        //console.log(board)
-        
-        // wss = SSL-krypterad
-        // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}`
-        WS_URL = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}&board=${board}`
-
-        console.log(WS_URL)
-        
-        // Create a WebSocket connection
-        const socket = new WebSocket(WS_URL);
-
-        // Connection established 
-        socket.onopen = function (event) {
-            console.log('Connected to WebSocket server');
-        };
-
-        // Message listener
-        socket.onmessage = function (event) {
-            console.log('Received message:', event.data);
-            const data = JSON.parse(event.data);
-
-            if (data.type == 'paste') {
-                document.querySelector('#out').innerText = data.text;
-                document.querySelector('#err').innerText = '';
-            } else if (data.type == 'error') {
-                document.querySelector('#err').innerText = data.msg;
-            }
-        };
-
-        // Connection closed 
-        socket.onclose = function (event) {
-            console.log('Connection closed');
-        };
-
-        /*document.querySelector('#in').addEventListener('input', (evt) => {
-            socket.send(JSON.stringify({
-                type: 'paste',
-                text: evt.target.value
-            }));
-        });*/
-    </script>
     <script src="/ws-frontend/app.js"></script>
 </body>
 
