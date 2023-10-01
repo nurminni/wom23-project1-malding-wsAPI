@@ -53,59 +53,19 @@
             } else if (data.type == 'error') {
                 document.querySelector('#err').innerText = data.msg;
             }
-
-            // Remove the token input field since it's no longer needed
-
-            // Add an event listener to send the WebSocket request when the "Connect" button is clicked
-            document.querySelector('#connectButton').addEventListener('click', () => {
-                // Extract board ID from the input field
-                const boardId = document.querySelector('#boardId').value;
-
-                // Check if the board ID is provided
-                if (!boardId) {
-                    alert('Please enter a Board ID.');
-                    return;
-                }
-
-                // Construct the WebSocket URL with board ID and token
-                const WS_URL = `ws://localhost:3030?token=${token}&boardId=${boardId}`;
-
-                // Create a WebSocket connection
-                const socket = new WebSocket(WS_URL);
-
-                // Connection established 
-                socket.onopen = function (event) {
-                    console.log('Connected to WebSocket server');
-                };
-
-                // Message listener
-                socket.onmessage = function (event) {
-                    console.log('Received message:', event.data);
-                    const data = JSON.parse(event.data);
-
-                    if (data.type == 'paste') {
-                        document.querySelector('#out').innerText = data.text;
-                        document.querySelector('#err').innerText = '';
-                    } else if (data.type == 'error') {
-                        document.querySelector('#err').innerText = data.msg;
-                    }
-                };
-
-                // Connection closed 
-                socket.onclose = function (event) {
-                    console.log('Connection closed');
-                };
-
-                document.querySelector('#in').addEventListener('input', (evt) => {
-                    const inputText = evt.target.value;
-                    document.querySelector('#out').innerText = inputText; // Update the "out" paragraph
-                    socket.send(JSON.stringify({
-                        type: 'paste',
-                        text: inputText
-                    }));
-                });
-            });
         };
+
+        // Connection closed 
+        socket.onclose = function (event) {
+            console.log('Connection closed');
+        };
+
+        document.querySelector('#in').addEventListener('input', (evt) => {
+            socket.send(JSON.stringify({
+                type: 'paste',
+                text: evt.target.value
+            }));
+        });
     </script>
 </body>
 
