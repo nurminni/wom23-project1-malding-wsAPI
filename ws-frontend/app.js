@@ -24,9 +24,8 @@
 
         const boardIdsString = boardIds.join('&board=');
         // Construct the URL with boardIds as URL parameters
-        const baseUrl = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}`;
+        const baseUrl = `wss://malding-ws-api.azurewebsites.net?token=${WS_TOKEN}`;
         const WS_URL = `${baseUrl}&board=${boardIdsString}`;
-
         console.log('Constructed URL with boardIds:', urlWithParams);
         
         //console.log(WS_TOKEN)
