@@ -10,6 +10,20 @@ let input = document.getElementById('userInput');
 // Initialize a variable to keep track of the color index
 let i = 0;
 
+// Function to handle WebSocket messages
+socket.onmessage = function (event) {
+    console.log('Received message:', event.data);
+    const data = JSON.parse(event.data);
+
+    if (data.type == 'error') {
+        // Handle error messages if needed
+        console.log(data.msg);
+    } else if (data.type == 'createNote') {
+        // Call divStyle to create the note on all clients when a "createNote" message is received
+        divStyle(data.text);
+    }
+};
+
 // Add a 'keydown' event listener to the 'createBox' element
 createBox.addEventListener('keydown', content);
 
@@ -25,18 +39,20 @@ function content(e) {
     if (e.keyCode == 13) {
         // Call the 'divStyle' function with the input value
         const noteText = input.value;
-        divStyle(noteText);
 
-        // Clear the input field
-        input.value = "";
-        // Hide the 'createBox' element by setting its style to "none"
-        createBox.style.display = "none";
+        // Create a new note locally on the client
+        divStyle(noteText);
 
         // Send a WebSocket message to the server to broadcast the note creation
         socket.send(JSON.stringify({
             type: 'createNote',
             text: noteText,
         }));
+
+        // Clear the input field
+        input.value = "";
+        // Hide the 'createBox' element by setting its style to "none"
+        createBox.style.display = "none";
     }
 }
 
@@ -70,17 +86,4 @@ function divStyle(text) {
 
     // Append the new 'div' element to the 'notes' container
     notes.appendChild(div);
-
-    socket.onmessage = function (event) {
-        console.log('Received message:', event.data);
-        const data = JSON.parse(event.data);
-
-        if (data.type == 'error') {
-            // Handle error messages if needed
-            console.log(data.msg);
-        } else if (data.type == 'createNote') {
-            // Call divStyle to create the note on all clients when a "createNote" message is received
-            divStyle(data.text);
-        }
-    };
 }
