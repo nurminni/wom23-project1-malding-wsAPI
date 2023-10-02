@@ -1,65 +1,52 @@
-// Select the element with the class 'createBox' and get the first matching element
-let createBox = document.getElementsByClassName('createBox')[0];
+/*if (!localStorage.getItem('access_token')) {
+            localStorage.setItem('access_token', urlParams.get('access_token'));
+        }
+        if (!localStorage.getItem('board')) {
+            localStorage.setItem('board', urlParams.get('board'));
+        }*/
 
-// Select the element with the class 'notes' and get the first matching element
-let notes = document.getElementsByClassName('notes')[0];
+        // hårdkodat för test, sätt in i WS_TOKEN i .env
+        const WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+        const board = "65140bbf3923bcbdedc859a9"
 
-// Select the element with the ID 'userInput'
-let input = document.getElementById('userInput');
+        //console.log(WS_TOKEN)
+        //console.log(board)
+        
+        // wss = SSL-krypterad
+        // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}`
+        WS_URL = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}&board=${board}`
 
-// Initialize a variable to keep track of the color index
-let i = 0;
+        console.log(WS_URL)
+        
+        // Create a WebSocket connection
+        const socket = new WebSocket(WS_URL);
 
-// Add a 'keydown' event listener to the 'createBox' element
-createBox.addEventListener('keydown', content);
+        // Connection established 
+        socket.onopen = function (event) {
+            console.log('Connected to WebSocket server');
+        };
 
-// Add a 'click' event listener to the element with the ID 'create'
-document.getElementById("create").addEventListener("click", function() {
-    // Display the 'createBox' element by setting its style to "block"
-    createBox.style.display = "block";
-});
+        // Message listener
+        socket.onmessage = function (event) {
+            console.log('Received message:', event.data);
+            const data = JSON.parse(event.data);
 
-// Function to handle the 'keydown' event
-function content(e) {
-    // Check if the key code of the pressed key is '13' (Enter key)
-    if(e.keyCode == 13) {
-        // Call the 'divStyle' function with the input value
-        divStyle(input.value);
-        // Clear the input field
-        input.value = "";
-        // Hide the 'createBox' element by setting its style to "none"
-        createBox.style.display = "none";
-    }
-}
+            if (data.type == 'paste') {
+                document.querySelector('#out').innerText = data.text;
+                document.querySelector('#err').innerText = '';
+            } else if (data.type == 'error') {
+                document.querySelector('#err').innerText = data.msg;
+            }
+        };
 
-// Function to generate a random color
-function color() {
-    let randomColor = ["#c2ff3d", "#ff3de8", "3dc2ff", "#04e022", "#bc83e6", "#ebb328"];
-    // Check if the index 'i' exceeds the color array length, and reset it if necessary
-    if(i > randomColor.length - 1) {
-        i = 0;
-    }
-    // Return the color at the current index and increment 'i'
-    return randomColor[i++];
-}
+        // Connection closed 
+        socket.onclose = function (event) {
+            console.log('Connection closed');
+        };
 
-// Function to create and style a new note
-function divStyle(text) {
-    // Create a new 'div' element
-    let div = document.createElement('div');
-    // Add a class 'note' to the new 'div' element
-    div.className = 'note';
-    // Set the inner HTML of the 'div' element with the provided text
-    div.innerHTML = '<div class="details">'+'<h3>'+text+'<h3>'+'</div>';
-
-    // Add a 'dblclick' event listener to the new 'div' element for removing the note
-    div.addEventListener('dblclick', function() {
-        div.remove();
-    });
-    
-    // Set the background color of the 'div' element using the 'color' function
-    div.setAttribute('style', 'background:'+color()+'');
-    
-    // Append the new 'div' element to the 'notes' container
-    notes.appendChild(div);
-}
+        /*document.querySelector('#in').addEventListener('input', (evt) => {
+            socket.send(JSON.stringify({
+                type: 'paste',
+                text: evt.target.value
+            }));
+        });*/
