@@ -6,17 +6,36 @@
         }*/
 
         // hårdkodat för test, sätt in i WS_TOKEN i .env
-        const WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-        const board = "65140bbf3923bcbdedc859a9"
+        let WS_TOKEN = localStorage.getItem('access_token');
+        let payload;
+        let boardIds
+        if (WS_TOKEN) {
+            try {
+                const tokenParts = WS_TOKEN.split('.');
+                payload = JSON.parse(atob(tokenParts[1]));
+                boardIds = payload.boardIds;
+                console.log(boardIds);
+            } catch (e) {
+                console.error(e);
+            }
+        } else {
+            console.error('JWT token not found in localStorage.');
+        }
 
+        const boardIdsString = boardIds.join('&board=');
+        // Construct the URL with boardIds as URL parameters
+        const baseUrl = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}`;
+        const WS_URL = `${baseUrl}&board=${boardIdsString}`;
+
+        console.log('Constructed URL with boardIds:', urlWithParams);
+        
         //console.log(WS_TOKEN)
         //console.log(board)
         
         // wss = SSL-krypterad
         // WS_URL = `wss://ws-pastebin-niklas.azurewebsites.net?token=${WS_TOKEN}`
-        WS_URL = `ws://localhost:5500/ws-frontend/index.html?token=${WS_TOKEN}&board=${board}`
 
-        console.log(WS_URL)
+        //console.log(WS_URL)
         
         // Create a WebSocket connection
         const socket = new WebSocket(WS_URL);
