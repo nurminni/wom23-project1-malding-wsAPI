@@ -24,6 +24,21 @@ console.log('Constructed URL with boardIds:', WS_URL);
 //console.log(WS_URL)
 let noteText;
 
+// Take the entered username and password and attempt to authenticate them. If the
+// response indicates an error, provide the error message.
+const getJwtAuth = () => {
+    fetch("http://localhost:3000/auth?username=" + username + "&password=" + password)
+        .then(response => response.text())
+        .then((response) => {
+            if (response.includes("Error")) {
+                errorMessageSpan.innerHTML = response;
+            } else {
+                errorMessageSpan.innerHTML = "";
+                openWsConnection(response);
+            }
+        })
+        .catch(err => console.log(err));
+}  
 
 // Create a WebSocket connection
 const socket = new WebSocket(WS_URL);

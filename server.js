@@ -87,8 +87,8 @@ wss.on('connection', (ws, req) => {
 
             console.log(client)
             client.send(JSON.stringify({
-                type: 'paste',
-                text: message.text
+                type: 'createNote',
+                text: message.text,
             }));
         })
 
