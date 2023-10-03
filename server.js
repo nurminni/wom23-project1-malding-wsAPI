@@ -1,11 +1,15 @@
 const WebSocket = require('ws')
 require('dotenv').config()
+var jwt = require('jsonwebtoken');
+const Url = require('url');
 
 const PORT = process.env.PORT || 5500
 const wss = new WebSocket.Server({ 
     port: PORT,
     allowEIO3: true
 })
+
+const jwtSecret = process.env.JWT_SECRET
 
 // Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
 const boards = []
@@ -14,21 +18,39 @@ const clients = new Set()
 // URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
     
+    var token = Url.parse(req.url, true).query.access_token;
+    console.log(token)
+
     // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
     const url = req.url.slice(1)
     const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
-    console.log(urlParams)
-    console.log(urlParams.get('access_token'))
-    console.log(urlParams.get('board'))
+    //console.log(urlParams)
+    //console.log(urlParams.get('access_token'))
+    //console.log(urlParams.get('board'))
+
+    let secret;
+    jwt.verify(token, jwtSecret, (err, decoded) => {
+        if (err) {
+            ws.send(JSON.stringify({
+                type: 'error',
+                msg: 'ERROR: Invalid token.'
+            }));
+            ws.close();
+        }
+        else {
+            secret = decoded
+            console.log(decoded)
+        }
+    })
     
-    if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
+    /*if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
         console.log('Invalid token: ' + urlParams.get('access_token'));
         ws.send(JSON.stringify({
             type: 'error',
             msg: 'ERROR: Invalid token.'
         }));
         ws.close();
-    }
+    }*/
 
     const boardId = urlParams.get('board')
     if(!boards.includes(boardId)) {
