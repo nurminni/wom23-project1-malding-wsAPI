@@ -55,7 +55,6 @@ wss.on('connection', (ws, req) => {
     const boardId = urlParams.get('board')
     if(!boards.includes(boardId)) {
         boards.push(boardId)
-        boards.sort()
     }
 
     // Spara connectionen i vårt client-Set:
@@ -67,7 +66,7 @@ wss.on('connection', (ws, req) => {
     boards[boardId] = clients
     
     console.log('Client connected:', req.headers['sec-websocket-key'], 
-        'client count:', clients.size, ws);
+      'client count:', clients.size, ws);
 
     ws.on('message', (rawMessage) => {
 
@@ -80,17 +79,33 @@ wss.on('connection', (ws, req) => {
 
         console.log('Received message:', message)
 
-        clients.forEach(client => {
+        if (message.type === 'createNote'){
+            clients.forEach(client => {
 
-            // Skicka inte till vår egen klient (ws)
-            if (client === ws) return
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) return
+    
+                console.log(client)
+                client.send(JSON.stringify({
+                    type: 'createNote',
+                    text: message.text,
+                    id: message.id,
+                }));
+            })
+        }
+        else if (message.type === 'deleteNote'){
+            clients.forEach(client => {
 
-            console.log(client)
-            client.send(JSON.stringify({
-                type: 'createNote',
-                text: message.text,
-            }));
-        })
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) return
+    
+                console.log(client)
+                client.send(JSON.stringify({
+                    type: 'deleteNote',
+                    id: message.id,
+                }));
+            })
+        }
 
     });
 
