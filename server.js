@@ -106,6 +106,20 @@ wss.on('connection', (ws, req) => {
                 }));
             })
         }
+        else if (message.type === 'addUser'){
+            clients.forEach(client => {
+
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) return
+    
+                console.log(client)
+                client.send(JSON.stringify({
+                    type: 'addUser',
+                    email: message.email,
+                }));
+            })
+        }
+        
 
     });
 
