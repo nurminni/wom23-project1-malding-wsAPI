@@ -80,7 +80,7 @@ wss.on('connection', (ws, req) => {
         console.log('Received message:', message)
 
         if (message.type === 'createNote'){
-            clients.forEach(client => {
+            boards[message.board].forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
@@ -90,6 +90,7 @@ wss.on('connection', (ws, req) => {
                     type: 'createNote',
                     text: message.text,
                     id: message.id,
+                    board: message.board
                 }));
             })
         }
