@@ -89,6 +89,7 @@ wss.on('connection', (ws, req) => {
                 client.send(JSON.stringify({
                     type: 'createNote',
                     text: message.text,
+                    color: message.color,
                     id: message.id,
                     board: message.board
                 }));
