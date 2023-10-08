@@ -4,7 +4,7 @@ var jwt = require('jsonwebtoken');
 const Url = require('url');
 
 const PORT = process.env.PORT || 5500
-const wss = new WebSocket.Server({ 
+const wss = new WebSocket.Server({
     port: PORT,
     allowEIO3: true
 })
@@ -14,10 +14,11 @@ const jwtSecret = process.env.JWT_SECRET
 // Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
 const boards = []
 const clients = new Set()
+const notePositions = {};
 //console.log(wss)
 // URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
-    
+
     var token = Url.parse(req.url, true).query.access_token;
     console.log(token)
 
@@ -42,7 +43,7 @@ wss.on('connection', (ws, req) => {
             console.log(decoded)
         }
     })
-    
+
     /*if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
         console.log('Invalid token: ' + urlParams.get('access_token'));
         ws.send(JSON.stringify({
@@ -53,7 +54,7 @@ wss.on('connection', (ws, req) => {
     }*/
 
     const boardId = urlParams.get('board')
-    if(!boards.includes(boardId)) {
+    if (!boards.includes(boardId)) {
         boards.push(boardId)
     }
 
@@ -64,14 +65,14 @@ wss.on('connection', (ws, req) => {
     }
 
     boards[boardId] = clients
-    
-    console.log('Client connected:', req.headers['sec-websocket-key'], 
-      'client count:', clients.size, ws);
+
+    console.log('Client connected:', req.headers['sec-websocket-key'],
+        'client count:', clients.size, ws);
 
     ws.on('message', (rawMessage) => {
 
         ws.lastMessage = new Date()
-    
+
         // Vi konverterar vår råa JSON till ett objekt
         const message = JSON.parse(rawMessage.toString())
 
@@ -79,12 +80,12 @@ wss.on('connection', (ws, req) => {
 
         console.log('Received message:', message)
 
-        if (message.type === 'createNote'){
+        if (message.type === 'createNote') {
             boards[message.board].forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-    
+
                 console.log(client)
                 client.send(JSON.stringify({
                     type: 'createNote',
@@ -95,12 +96,12 @@ wss.on('connection', (ws, req) => {
                 }));
             })
         }
-        else if (message.type === 'deleteNote'){
+        else if (message.type === 'deleteNote') {
             clients.forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-    
+
                 console.log(client)
                 client.send(JSON.stringify({
                     type: 'deleteNote',
@@ -108,12 +109,12 @@ wss.on('connection', (ws, req) => {
                 }));
             })
         }
-        else if (message.type === 'addUser'){
+        else if (message.type === 'addUser') {
             clients.forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-    
+
                 console.log(client)
                 client.send(JSON.stringify({
                     type: 'addUser',
@@ -121,13 +122,26 @@ wss.on('connection', (ws, req) => {
                 }));
             })
         }
-        
+        else if (message.type === 'moveNote') {
+            const noteId = message.id;
+            const position = message.position;
 
+            // Update the note's position in the server's data structure
+            notePositions[noteId] = position;
+
+            // Broadcast the updated position to all clients except the sender
+            clients.forEach(client => {
+                if (client === ws) return;
+
+                client.send(JSON.stringify({
+                    type: 'moveNote',
+                    id: noteId,
+                    position: position,
+                }));
+            });
+        }
     });
-
     ws.on('close', () => {
         console.log('Client disconnected');
     });
-    
-
 });
