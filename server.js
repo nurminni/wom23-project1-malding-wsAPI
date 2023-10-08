@@ -11,22 +11,16 @@ const wss = new WebSocket.Server({
 
 const jwtSecret = process.env.JWT_SECRET
 
-// Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
 const boards = []
 const clients = new Set()
-//console.log(wss)
-// URL example: ws://my-server?token=my-secret-token
+
 wss.on('connection', (ws, req) => {
     
     var token = Url.parse(req.url, true).query.access_token;
     console.log(token)
 
-    // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
     const url = req.url.slice(1)
     const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
-    //console.log(urlParams)
-    //console.log(urlParams.get('access_token'))
-    //console.log(urlParams.get('board'))
 
     let secret;
     jwt.verify(token, jwtSecret, (err, decoded) => {
@@ -42,15 +36,6 @@ wss.on('connection', (ws, req) => {
             console.log(decoded)
         }
     })
-    
-    /*if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
-        console.log('Invalid token: ' + urlParams.get('access_token'));
-        ws.send(JSON.stringify({
-            type: 'error',
-            msg: 'ERROR: Invalid token.'
-        }));
-        ws.close();
-    }*/
 
     const boardId = urlParams.get('board')
     if(!boards.includes(boardId)) {
@@ -88,6 +73,22 @@ wss.on('connection', (ws, req) => {
                 console.log(client)
                 client.send(JSON.stringify({
                     type: 'createNote',
+                    text: message.text,
+                    color: message.color,
+                    id: message.id,
+                    board: message.board
+                }));
+            })
+        }
+        else if (message.type === 'editNote'){
+            boards[message.board].forEach(client => {
+
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) return
+    
+                console.log(client)
+                client.send(JSON.stringify({
+                    type: 'editNote',
                     text: message.text,
                     color: message.color,
                     id: message.id,
