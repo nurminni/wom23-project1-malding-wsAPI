@@ -96,6 +96,22 @@ wss.on('connection', (ws, req) => {
                 }));
             })
         }
+        else if (message.type === 'editNote'){
+            boards[message.board].forEach(client => {
+
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) return
+    
+                console.log(client)
+                client.send(JSON.stringify({
+                    type: 'editNote',
+                    text: message.text,
+                    color: message.color,
+                    id: message.id,
+                    board: message.board
+                }));
+            })
+        }
         else if (message.type === 'deleteNote') {
             clients.forEach(client => {
 
