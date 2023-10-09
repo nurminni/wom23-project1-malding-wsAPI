@@ -7,19 +7,18 @@ const PORT = process.env.PORT || 5500
 const wss = new WebSocket.Server({
     port: PORT,
     allowEIO3: true
-})
+});
 
-const jwtSecret = process.env.JWT_SECRET
+const jwtSecret = process.env.JWT_SECRET;
 
-const boards = []
-const clients = new Set()
+const boards = [];
+const clients = new Set();
 const notePositions = {};
 wss.on('connection', (ws, req) => {
 
     var token = Url.parse(req.url, true).query.access_token;
 
-    // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
-    const url = req.url.slice(1)
+    const url = req.url.slice(1);
     const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
 
     let secret;
@@ -34,37 +33,37 @@ wss.on('connection', (ws, req) => {
         else {
             secret = decoded
         }
-    })
-    const boardId = urlParams.get('board')
+    });
+    const boardId = urlParams.get('board');
     if (!boards.includes(boardId)) {
-        boards.push(boardId)
+        boards.push(boardId);
     }
 
-    // Spara connectionen i vårt client-Set:
+    // Store the connection in our client-Set:
     if (!clients.has(ws)) {
-        ws.createdAt = new Date()
-        clients.add(ws)
+        ws.createdAt = new Date();
+        clients.add(ws);
     }
 
-    boards[boardId] = clients
+    boards[boardId] = clients;
 
     console.log('Client connected:', req.headers['sec-websocket-key'],
         'client count:', clients.size, ws);
 
     ws.on('message', (rawMessage) => {
 
-        ws.lastMessage = new Date()
+        ws.lastMessage = new Date();
 
-        // Vi konverterar vår råa JSON till ett objekt
-        const message = JSON.parse(rawMessage.toString())
+        // Convert the raw JSON to an object
+        const message = JSON.parse(rawMessage.toString());
 
-        message.clientId = req.headers['sec-websocket-key']
+        message.clientId = req.headers['sec-websocket-key'];
 
         if (message.type === 'createNote') {
             clients.forEach(client => {
 
-                // Skicka inte till vår egen klient (ws)
-                if (client === ws) return
+                // Don't send to our own client (ws)
+                if (client === ws) return;
                 client.send(JSON.stringify({
                     type: 'createNote',
                     text: message.text,
@@ -72,13 +71,13 @@ wss.on('connection', (ws, req) => {
                     id: message.id,
                     board: message.board
                 }));
-            })
+            });
         }
         else if (message.type === 'editNote'){
             clients.forEach(client => {
 
-                // Skicka inte till vår egen klient (ws)
-                if (client === ws) return
+                // Don't send to our own client (ws)
+                if (client === ws) return;
                 client.send(JSON.stringify({
                     type: 'editNote',
                     text: message.text,
@@ -86,39 +85,39 @@ wss.on('connection', (ws, req) => {
                     id: message.id,
                     board: message.board
                 }));
-            })
+            });
         }
         else if (message.type === 'deleteNote') {
             clients.forEach(client => {
-                // Skicka inte till vår egen klient (ws)
-                if (client === ws) return
+                // Don't send to our own client (ws)
+                if (client === ws) return;
                 client.send(JSON.stringify({
                     type: 'deleteNote',
                     id: message.id,
                 }));
-            })
+            });
         }
         else if (message.type === 'addUser') {
             clients.forEach(client => {
-                // Skicka inte till vår egen klient (ws)
-                if (client === ws) return
+                // Don't send to our own client (ws)
+                if (client === ws) return;
                 client.send(JSON.stringify({
                     type: 'addUser',
                     email: message.email,
                     board: message.board
                 }));
-            })
+            });
         }
         else if (message.type === 'updateUserToBoard') {
             clients.forEach(client => {
-                // Skicka inte till vår egen klient (ws)
+                // Update our own clients (ws) stored board connections
                 if (client === ws) {
                     if (!boards.includes(message.board)) {
-                        boards.push(message.board)
-                        boards[message.board] = client
+                        boards.push(message.board);
+                        boards[message.board] = client;
                     }
                 }
-            })
+            });
         }
         else if (message.type === 'moveNote') {
             const noteId = message.id;
