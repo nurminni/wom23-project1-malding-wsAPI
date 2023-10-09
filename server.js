@@ -11,23 +11,16 @@ const wss = new WebSocket.Server({
 
 const jwtSecret = process.env.JWT_SECRET
 
-// Set: datatyp "med bara nycklar", Wikipedia: Unlike most other collection types, rather than retrieving a specific element from a set, one typically tests a value for membership in a set. 
 const boards = []
 const clients = new Set()
 const notePositions = {};
-//console.log(wss)
-// URL example: ws://my-server?token=my-secret-token
 wss.on('connection', (ws, req) => {
 
     var token = Url.parse(req.url, true).query.access_token;
-    console.log(token)
 
     // Check valid token (set token in .env as WS_TOKEN=my-secret-token )
     const url = req.url.slice(1)
     const urlParams = new URLSearchParams(req.url.slice(url.indexOf("?") + 1));
-    //console.log(urlParams)
-    //console.log(urlParams.get('access_token'))
-    //console.log(urlParams.get('board'))
 
     let secret;
     jwt.verify(token, jwtSecret, (err, decoded) => {
@@ -40,19 +33,8 @@ wss.on('connection', (ws, req) => {
         }
         else {
             secret = decoded
-            console.log(decoded)
         }
     })
-
-    /*if (urlParams.get('access_token') !== process.env.WS_TOKEN) {
-        console.log('Invalid token: ' + urlParams.get('access_token'));
-        ws.send(JSON.stringify({
-            type: 'error',
-            msg: 'ERROR: Invalid token.'
-        }));
-        ws.close();
-    }*/
-
     const boardId = urlParams.get('board')
     if (!boards.includes(boardId)) {
         boards.push(boardId)
@@ -78,15 +60,11 @@ wss.on('connection', (ws, req) => {
 
         message.clientId = req.headers['sec-websocket-key']
 
-        console.log('Received message:', message)
-
         if (message.type === 'createNote') {
             clients.forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-
-                console.log(client)
                 client.send(JSON.stringify({
                     type: 'createNote',
                     text: message.text,
@@ -101,8 +79,6 @@ wss.on('connection', (ws, req) => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-    
-                console.log(client)
                 client.send(JSON.stringify({
                     type: 'editNote',
                     text: message.text,
@@ -114,11 +90,8 @@ wss.on('connection', (ws, req) => {
         }
         else if (message.type === 'deleteNote') {
             clients.forEach(client => {
-
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-
-                console.log(client)
                 client.send(JSON.stringify({
                     type: 'deleteNote',
                     id: message.id,
@@ -127,11 +100,8 @@ wss.on('connection', (ws, req) => {
         }
         else if (message.type === 'addUser') {
             clients.forEach(client => {
-
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
-
-                console.log(client)
                 client.send(JSON.stringify({
                     type: 'addUser',
                     email: message.email,
@@ -141,7 +111,6 @@ wss.on('connection', (ws, req) => {
         }
         else if (message.type === 'updateUserToBoard') {
             clients.forEach(client => {
-
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) {
                     if (!boards.includes(message.board)) {
@@ -154,14 +123,11 @@ wss.on('connection', (ws, req) => {
         else if (message.type === 'moveNote') {
             const noteId = message.id;
             const position = message.position;
-
             // Update the note's position in the server's data structure
             notePositions[noteId] = position;
-
             // Broadcast the updated position to all clients except the sender
             clients.forEach(client => {
                 if (client === ws) return;
-
                 client.send(JSON.stringify({
                     type: 'moveNote',
                     id: noteId,
