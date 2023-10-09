@@ -81,7 +81,7 @@ wss.on('connection', (ws, req) => {
         console.log('Received message:', message)
 
         if (message.type === 'createNote') {
-            boards[message.board].forEach(client => {
+            clients.forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
@@ -97,7 +97,7 @@ wss.on('connection', (ws, req) => {
             })
         }
         else if (message.type === 'editNote'){
-            boards[message.board].forEach(client => {
+            clients.forEach(client => {
 
                 // Skicka inte till vår egen klient (ws)
                 if (client === ws) return
@@ -135,7 +135,20 @@ wss.on('connection', (ws, req) => {
                 client.send(JSON.stringify({
                     type: 'addUser',
                     email: message.email,
+                    board: message.board
                 }));
+            })
+        }
+        else if (message.type === 'updateUserToBoard') {
+            clients.forEach(client => {
+
+                // Skicka inte till vår egen klient (ws)
+                if (client === ws) {
+                    if (!boards.includes(message.board)) {
+                        boards.push(message.board)
+                        boards[message.board] = client
+                    }
+                }
             })
         }
         else if (message.type === 'moveNote') {
